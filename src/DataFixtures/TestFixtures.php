@@ -15,11 +15,11 @@ class TestFixtures extends Fixture
     public function load(ObjectManager $manager): void
     {
 
-        for ($i = 0; $i < 2; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             $message = new Message();
             $message->setUuid('test_uuid_' . $i);
             $message->setText('This is the text message for test' . $i);
-            $message->setStatus(random(['sent']));
+            $message->setStatus(random(['sent', 'read']));
             $message->setCreatedAt(new \DateTime());
 
             $manager->persist($message);

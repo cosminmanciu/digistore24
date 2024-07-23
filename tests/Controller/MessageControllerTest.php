@@ -5,6 +5,7 @@ namespace Controller;
 
 use App\DataFixtures\TestFixtures;
 use App\Entity\Message;
+use App\Handler\SendMessageHandler;
 use App\Message\SendMessage;
 use Doctrine\ORM\EntityManager;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -54,10 +55,68 @@ class MessageControllerTest extends WebTestCase
             ->assertContains(SendMessage::class, 1);
     }
 
-    public function testListWithMessages(): void
+    public function testListWithMessagesAndStatusSent(): void
     {
 
         $this->client->request('GET', '/messages', ['status' => 'sent']);
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $response = $this->client->getResponse();
+
+        $content = $response->getContent();
+        if (empty($content))
+        {
+            $this->fail('Failed to decode JSON response.');
+        }
+        $messages = json_decode($content, true);
+
+        if ($messages === null) {
+            $this->fail('Failed to decode JSON response.');
+        }
+
+        /** @var array<array{uuid: string, text: string, status: string}> $messages */
+        foreach ($messages as $message) {
+            $this->assertArrayHasKey('uuid', $message);
+            $this->assertArrayHasKey('text', $message);
+            $this->assertArrayHasKey('status', $message);
+            $this->assertEquals(SendMessageHandler::MESSAGE_SENT, $message['status']);
+        }
+
+    }
+
+    public function testListWithMessagesAndStatusRead(): void
+    {
+
+        $this->client->request('GET', '/messages', ['status' => 'read']);
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $response = $this->client->getResponse();
+
+        $content = $response->getContent();
+        if (empty($content))
+        {
+            $this->fail('Failed to decode JSON response.');
+        }
+        $messages = json_decode($content, true);
+
+        if ($messages === null) {
+            $this->fail('Failed to decode JSON response.');
+        }
+
+        /** @var array<array{uuid: string, text: string, status: string}> $messages */
+        foreach ($messages as $message) {
+            $this->assertArrayHasKey('uuid', $message);
+            $this->assertArrayHasKey('text', $message);
+            $this->assertArrayHasKey('status', $message);
+            $this->assertEquals(SendMessageHandler::MESSAGE_READ, $message['status']);
+        }
+
+    }
+
+    public function testListWithMessagesAndNoStatus(): void
+    {
+
+        $this->client->request('GET', '/messages');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         $response = $this->client->getResponse();
@@ -82,6 +141,14 @@ class MessageControllerTest extends WebTestCase
 
     }
 
+    public function testListWithMessagesAndFaultyStatus(): void
+    {
+
+        $this->client->request('GET', '/messages', ['status' => '#``test$@']);
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+
+    }
+
     public function testListWithNoMessages(): void
     {
         $messageRepository = $this->createMock(MessageRepository::class);
@@ -101,7 +168,9 @@ class MessageControllerTest extends WebTestCase
     }
 
     /*
-     * Added extra test to see if message is sent for inmemory Sync
+     * Added extra test to see if message is sent for inMemory Sync
+     * in order to execute this test you need to change file messenger.yaml
+     * replace - sync: test// with sync: 'inMemory//'
      */
 
 //    public function testMessageIsSentInMemory(): void

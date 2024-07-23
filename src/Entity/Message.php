@@ -1,5 +1,5 @@
 <?php
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace App\Entity;
 
@@ -8,6 +8,8 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 use DateTime;
+use Symfony\Component\Validator\Constraints as Assert;
+use App\Validator\ValidMessageText;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 class Message
@@ -18,15 +20,21 @@ class Message
     private ?int $id = null;
 
     #[ORM\Column(type: Types::GUID, unique: true)]
+    #[Assert\Uuid]
     private ?string $uuid = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\Regex('/^[a-zA-Z0-9\s]+$/')]
     private ?string $text = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\ExpressionSyntax(
+        allowedVariables: ['sent', 'read'],
+    )]
+    #[Assert\Regex('/^[a-zA-Z0-9\s]+$/')]
     private ?string $status = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[ORM\Column(type: 'datetime')]
     private DateTime $createdAt;
 
     public function __construct()

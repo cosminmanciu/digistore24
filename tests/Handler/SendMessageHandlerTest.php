@@ -7,14 +7,16 @@ use App\Handler\SendMessageHandler;
 use App\Message\SendMessage;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class SendMessageHandlerTest extends TestCase
 {
     public function testInvoke(): void
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
+        $validator = $this->createMock(ValidatorInterface::class);
 
-        $handler = new SendMessageHandler($entityManager);
+        $handler = new SendMessageHandler($entityManager, $validator);
 
         $sendMessage = new SendMessage('Test message');
 
