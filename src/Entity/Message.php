@@ -3,22 +3,20 @@
 namespace App\Entity;
 
 use App\Repository\MessageRepository;
-use DateTime;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
+use DateTime;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
-/**
- * TODO: Review Message class
- */
 class Message
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: Types::INTEGER)]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::GUID)]
+    #[ORM\Column(type: Types::GUID, unique: true)]
     private ?string $uuid = null;
 
     #[ORM\Column(length: 255)]
@@ -26,9 +24,15 @@ class Message
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $status = null;
-    
-    #[ORM\Column(type: 'datetime')]
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private DateTime $createdAt;
+
+    public function __construct()
+    {
+        $this->createdAt = new DateTime();
+        $this->uuid = Uuid::v6()->toRfc4122();
+    }
 
     public function getId(): ?int
     {
@@ -40,10 +44,9 @@ class Message
         return $this->uuid;
     }
 
-    public function setUuid(string $uuid): static
+    public function setUuid(string $uuid): self
     {
         $this->uuid = $uuid;
-
         return $this;
     }
 
@@ -52,10 +55,9 @@ class Message
         return $this->text;
     }
 
-    public function setText(string $text): static
+    public function setText(string $text): self
     {
         $this->text = $text;
-
         return $this;
     }
 
@@ -64,10 +66,9 @@ class Message
         return $this->status;
     }
 
-    public function setStatus(string $status): static
+    public function setStatus(?string $status): self
     {
         $this->status = $status;
-
         return $this;
     }
 
@@ -76,10 +77,9 @@ class Message
         return $this->createdAt;
     }
 
-    public function setCreatedAt(DateTime $createdAt): static
+    public function setCreatedAt(DateTime $createdAt): self
     {
         $this->createdAt = $createdAt;
-        
         return $this;
     }
 }

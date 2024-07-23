@@ -6,8 +6,8 @@ namespace App\Controller;
 use App\Message\SendMessage;
 use App\Repository\MessageRepository;
 use Controller\MessageControllerTest;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -15,19 +15,44 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * @see MessageControllerTest
- * TODO: review both methods and also the `openapi.yaml` specification
- *       Add Comments for your Code-Review, so that the developer can understand why changes are needed.
  */
 class MessageController extends AbstractController
 {
+    const NO_MESSAGES = 'No messages found .';
+
     /**
-     * TODO: cover this method with tests, and refactor the code (including other files that need to be refactored)
+     * @var MessageRepository
      */
-    #[Route('/messages')]
-    public function list(Request $request, MessageRepository $messages): Response
+    private MessageRepository $messageRepository;
+
+    /**
+     * @var MessageBusInterface
+     */
+    private MessageBusInterface $messageBus;
+
+    /**
+     * Added Dependency Injection Via Controller in order to facilitate easier testing
+     * @param MessageRepository $messageRepository
+     * @param MessageBusInterface $messageBus
+     */
+    public function __construct(MessageRepository $messageRepository, MessageBusInterface $messageBus)
     {
-        $messages = $messages->by($request);
-  
+        $this->messageRepository = $messageRepository;
+        $this->messageBus = $messageBus;
+    }
+
+
+    #[Route('/messages', name: 'list_messages', methods: ['GET'])]
+    public function list(Request $request): JsonResponse
+    {
+        // Renamed repo method by to findAllByStatus for better understanding
+        $messages = $this->messageRepository->findAllByStatus($request->query->getString('status'));
+
+        //Added extra validation
+        if (empty($messages)) {
+            return new JsonResponse(['error' => self::NO_MESSAGES], Response::HTTP_NOT_FOUND);
+        }
+
         foreach ($messages as $key=>$message) {
             $messages[$key] = [
                 'uuid' => $message->getUuid(),
@@ -35,23 +60,23 @@ class MessageController extends AbstractController
                 'status' => $message->getStatus(),
             ];
         }
-        
-        return new Response(json_encode([
-            'messages' => $messages,
-        ], JSON_THROW_ON_ERROR), headers: ['Content-Type' => 'application/json']);
+
+        return new JsonResponse($messages, Response::HTTP_OK);
     }
 
-    #[Route('/messages/send', methods: ['GET'])]
-    public function send(Request $request, MessageBusInterface $bus): Response
+    #[Route('/messages/send', name:'send_message', methods: ['GET'])]
+    public function send(Request $request): Response
     {
-        $text = $request->query->get('text');
-        
-        if (!$text) {
-            return new Response('Text is required', 400);
+        $text = $request->query->getString('text');
+
+        //Added extra validation
+        if (empty($text)) {
+            return new Response('Text is required', Response::HTTP_BAD_REQUEST);
         }
 
-        $bus->dispatch(new SendMessage($text));
-        
-        return new Response('Successfully sent', 204);
+        $this->messageBus->dispatch(new SendMessage($text));
+
+        return new Response(null, Response::HTTP_NO_CONTENT);
     }
+
 }

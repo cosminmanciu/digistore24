@@ -1,11 +1,11 @@
 <?php
+declare(strict_types = 1);
 
 namespace App\Repository;
 
 use App\Entity\Message;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @extends ServiceEntityRepository<Message>
@@ -17,25 +17,33 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class MessageRepository extends ServiceEntityRepository
 {
+    /**
+     * @param ManagerRegistry $registry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Message::class);
     }
-    
-    public function by(Request $request): array
+
+    /**
+     * added Query Builder for a faster response from db
+     * @param string|null $status
+     * @return Message[]
+     */
+    public function findAllByStatus(?string $status): array
     {
-        $status = $request->query->get('status');
-        
-        if ($status) {
-            $messages = $this->getEntityManager()
-                ->createQuery(
-                    sprintf("SELECT m FROM App\Entity\Message m WHERE m.status = '%s'", $status)
-                )
-                ->getResult();
-        } else {
-            $messages = $this->findAll();
+        $entityManager = $this->getEntityManager();
+        $queryBuilder = $entityManager->createQueryBuilder()
+            ->select('m')
+            ->from(Message::class, 'm');
+        if (!empty($status)) {
+            $queryBuilder->where('m.status = :status');
+            $queryBuilder->setParameter('status', $status);
         }
-        
-        return $messages;
+        $query = $queryBuilder->orderBy('m.createdAt', 'DESC')->getQuery();
+        /** @var Message[] $result */
+        $result = $query->getResult();
+
+        return $result;
     }
 }
