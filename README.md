@@ -25,3 +25,15 @@ If this does not work / you're faster with your own setup, feel free to use your
 
 1. `just install` to install all dependencies
 2. Run `just start` for a dev server (or `symfony serve` if you don't use `nix-shell`)
+
+## ------------------------------------------------------------------------
+
+## Setup
+
+  1. Project was ran using a xampp server with Php 8.2 .
+  2. Run `symfony server:start` in order to start local server.
+  3. Run `composer install` command in order to initialize the project.
+  4. Execute App Fixtures on the dev env `php bin/console doctrine:fixtures:load`.
+  5. Run `vendor/bin/phpstan`.
+  6. Run `vendor/bin/phpunit`.
+  7. Test Local Api in file `openapi.yaml` and ensure route points to `http://127.0.0.1:8000/`.
